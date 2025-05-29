@@ -1,0 +1,6 @@
+# List of required non-standard Python modules.
+# To install Python packages system-wide, try
+# > apt install python3-xyz
+# where xyz is the package you are trying to install.
+sudo apt install python3-numpy
+sudo apt install python3-matplotlib

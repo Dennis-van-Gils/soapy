@@ -1,0 +1,2 @@
+qcc -O2 -Wall -fopenmp -disable-dimensions getData.c -o getData -lm
+qcc -O2 -Wall -fopenmp -disable-dimensions getFacet.c -o getFacet -lm
