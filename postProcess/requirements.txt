@@ -5,6 +5,8 @@
 sudo apt install python3-numpy
 sudo apt install python3-matplotlib
 
-# Installing Latex
+# Installing Latex and related
 sudo apt install texlive
 sudo apt install texlive-latex-extra
+sudo apt install cm-super
+sudo apt install dvipng
