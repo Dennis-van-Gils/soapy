@@ -136,27 +136,27 @@ int main(int argc, char const *argv[]) {
   tmax = 1.0;
   Ldomain = 5.0;
   X0 = -1.005;
-  
+
   Oh1 = 1e-3;
   k = 2.5e1;
   /**
   Note on the Peclet number:
-  Peclet number based on diffusion coefficient of smoke in air. 
+  Peclet number based on diffusion coefficient of smoke in air.
   $$
   Pe = \frac{V_\gamma R_0}{D}
   $$
   The inertio-capillary velocity is usuallly 0.1-1 m/s. Typical bubble radius is 1 mm.
   The diffusion coefficient of smoke in air is 1e-4 to 1e-5 m^2/s.
   */
-  Pe_gas = 1e-1; 
+  Pe_gas = 1e-1;
 
-  fprintf(ferr, "Level %d, tmax %g, Oh1 %3.2e, Lo %g\n", 
+  fprintf(ferr, "Level %d, tmax %g, Oh1 %3.2e, Lo %g\n",
           MAXlevel, tmax, Oh1, Ldomain);
 
   // Domain configuration
   L0 = Ldomain;
   init_grid(1 << 6);
-  
+
   // Create output directory
   char comm[80];
   snprintf(comm, sizeof(comm), "mkdir -p intermediate");
@@ -199,8 +199,8 @@ event init(t = 0) {
     x_p = (x1 + x2) / 2;
 
     // Adaptive refinement near interface
-    refine((R2circle(x, y) < 1.05) && 
-           (R2circle(x, y) > sq(0.025*(1.0 - h))) && 
+    refine((R2circle(x, y) < 1.05) &&
+           (R2circle(x, y) > sq(0.025*(1.0 - h))) &&
            (level < MAXlevel));
 
     // Initialize level-set function for interface
@@ -225,7 +225,7 @@ event init(t = 0) {
       if (R2circle(x, y) < sq(1.0 - h)) {
         p[] = 2. + 2./(1.-h);  // Inner bubble pressure
       }
-      else if ((R2circle(x, y) <= 1) && 
+      else if ((R2circle(x, y) <= 1) &&
                (R2circle(x, y) >= sq(1.0 - h))) {
         p[] = 2*f[];  // Film pressure
       }
@@ -275,7 +275,7 @@ restart capability.
 event writingFiles(t = 0, t += tsnap; t <= tmax) {
   p.nodump = false;  // Enable pressure output
   dump(file = "dump");
-  
+
   char nameOut[80];
   snprintf(nameOut, sizeof(nameOut), "intermediate/snapshot-%5.4f", t);
   dump(file = nameOut);
@@ -300,7 +300,7 @@ event logWriting(i++) {
     if (i == 0) {
       fprintf(ferr, "i dt t\n");
       fp = fopen("log", "w");
-      fprintf(fp, "Level %d, tmax %g, Oh %3.2e, Lo %g\n", 
+      fprintf(fp, "Level %d, tmax %g, Oh %3.2e, Lo %g\n",
               MAXlevel, tmax, Oh1, Ldomain);
       fprintf(fp, "i dt t\n");
       fprintf(fp, "%d %g %g \n", i, dt, t);
