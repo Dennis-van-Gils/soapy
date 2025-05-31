@@ -1,1 +1,2 @@
- qcc -O2 -Wall -fopenmp -disable-dimensions soapBubble-full.c -o soapBubble-full -lm
+qcc -O2 -Wall -fopenmp -disable-dimensions soapBubble-full.c -o soapBubble-full -lm
+qcc -O2 -Wall -fopenmp -disable-dimensions soapBubble-full-dvg.c -o soapBubble-full-dvg -lm
