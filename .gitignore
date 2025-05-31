@@ -148,3 +148,5 @@ deps/
 !*.sbatch
 **/getData-generic
 **/getData-Line
+simulationCases/log
+postProcess/texput.log
