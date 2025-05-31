@@ -96,6 +96,8 @@ deps/
 **/display.html
 **/soapBubble-full
 **/soapBubble-half
+**/simulationCases/log
+**/postProcess/texput.log
 # **/*.png
 
 # Custom executables
@@ -148,5 +150,3 @@ deps/
 !*.sbatch
 **/getData-generic
 **/getData-Line
-simulationCases/log
-postProcess/texput.log
