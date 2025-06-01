@@ -37,7 +37,7 @@ echo -e "\n${COLOR}Running ${EXE_NAME}${NC}"
 # ---------------
 echo -e "\n${COLOR}Post processing ${EXE_NAME}${NC}"
 cd ../postProcess/
-python3 ./Video-generic.py
+python3 ./Video-generic-dvg.py
 
 cd $ORIG_DIR
 

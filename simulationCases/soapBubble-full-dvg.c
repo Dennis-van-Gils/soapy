@@ -36,9 +36,17 @@ The simulation captures:
 #include "two-phase.h"
 #include "navier-stokes/conserving.h"
 #include "tension.h"
-#include "henry.h"
 
-scalar T[], * stracers = {T};
+#define USE_CONCENTRATION_INSTEAD_OF_TRACER
+
+#ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+  #include "henry.h"
+  scalar T[], * stracers = {T};
+#else
+  #include "tracer.h"
+  scalar ft[], * tracers = {ft};
+#endif
+
 /**
 ## Simulation Parameters
 
@@ -85,6 +93,10 @@ These control the error thresholds for grid adaptation:
 u.t[left] = dirichlet(0.0);
 u.n[left] = dirichlet(0.0);
 f[left] = dirichlet(0.0);
+#ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+#else
+  ft[left] = dirichlet(0.0);
+#endif
 
 /**
 ### Right Boundary (Outflow)
@@ -132,8 +144,8 @@ Initializes simulation parameters and launches the computation.
 */
 int main(int argc, char const *argv[]) {
   // Parameter assignments
-  MAXlevel = 11;
-  tmax = 1.0;
+  MAXlevel = 9; // 11;
+  tmax = 0.01;  // 1.0;
   Ldomain = 5.0;
   X0 = -1.005;
 
@@ -167,10 +179,12 @@ int main(int argc, char const *argv[]) {
   mu1 = Oh1; mu2 = Mu21*Oh1;
   f.sigma = 1.0;  // Surface tension coefficient
 
-  // for smoke concentration T
-  T.D1 = 1e-3/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in water, $Pe_\text{water} \to \infty$.
-  T.D2 = 1e0/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in air.
-  T.alpha = 1e-3; // proportion of smoke in water right at the interface (this should be close to 0.).
+  #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+    // for smoke concentration T
+    T.D1 = 1e-3/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in water, $Pe_\text{water} \to \infty$.
+    T.D2 = 1e0/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in air.
+    T.alpha = 1e-3; // proportion of smoke in water right at the interface (this should be close to 0.).
+  #endif
 
   run();
 }
@@ -217,11 +231,18 @@ event init(t = 0) {
       }
     }
     fractions(phi, f);
-    fraction(T, (sq((1.0 - h)*0.5) - R2circle(x, y)));
+
+    #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+      fraction(T, (sq((1.0 - h)*0.5) - R2circle(x, y)));
+    #else
+      fraction(ft, (sq((1.0 - h)*0.5) - R2circle(x, y)));
+    #endif
 
     // Initialize pressure field based on region
     foreach() {
-      T[] *= 1e1;
+      #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+        T[] *= 1e1;
+      #endif
       if (R2circle(x, y) < sq(1.0 - h)) {
         p[] = 2. + 2./(1.-h);  // Inner bubble pressure
       }
@@ -255,7 +276,12 @@ curvature while maintaining efficiency in smooth regions.
 scalar KAPPA[];
 event adapt(i++) {
   curvature(f, KAPPA);
-  adapt_wavelet((scalar *){f, u.x, u.y, KAPPA},
+  adapt_wavelet((scalar *){f, u.x, u.y, KAPPA
+                #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+                #else
+                  , ft
+                #endif
+                },
                 (double[]){fErr, VelErr, VelErr, KErr},
                 MAXlevel, MAXlevel - 4);
 }
@@ -313,3 +339,33 @@ event logWriting(i++) {
     fprintf(ferr, "%d %g %g\n", i, dt, t);
   }
 }
+
+//*
+event movies (i += 1; t <= tmax) {
+  scalar omega[];
+  vorticity(u, omega);
+  output_ppm(
+    omega,
+    file = "../postProcess/Video/vort.mp4",
+    box = {{0., 0.}, {2.5, 2.5}},
+    min = -1,
+    max = 1,
+    linear = false,
+    mask = {0}
+  );
+  output_ppm(
+    #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+      T,
+      file = "../postProcess/Video/T.mp4",
+    #else
+      ft,
+      file = "../postProcess/Video/ft.mp4",
+    #endif
+    box = {{0., 0.}, {2.5, 2.5}},
+    min = 0,
+    max = 1,
+    linear = false,
+    mask = {0}
+  );
+}
+//*/
