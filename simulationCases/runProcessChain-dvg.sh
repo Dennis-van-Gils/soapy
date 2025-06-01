@@ -1,11 +1,14 @@
 #!/bin/bash
 # WARNING: Will delete the log, dump and intermediate files
 
-EXE_NAME=soapBubble-full-dvg
+EXE_NAME='soapBubble-full-dvg'
+EXE_DIR='/home/soapy/simulationCases'
 ORIG_DIR=${PWD}
 
 COLOR='\033[0;33m' # Yellow
 NC='\033[0m'       # No Color
+
+cd $EXE_DIR
 
 # CLEAN
 # ---------------
@@ -30,11 +33,12 @@ qcc -O2 -Wall -fopenmp -disable-dimensions $EXE_NAME.c -o $EXE_NAME -lm
 echo -e "\n${COLOR}Running ${EXE_NAME}${NC}"
 ./$EXE_NAME
 
-# Video
+# VIDEO
 # ---------------
 echo -e "\n${COLOR}Post processing ${EXE_NAME}${NC}"
 cd ../postProcess/
 python3 ./Video-generic.py
+
 cd $ORIG_DIR
 
 echo -e "\033[0;32m"
