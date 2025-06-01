@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: Will delete the log, dump and intermediate files
 
-EXE_NAME='soapBubble-full-dvg'
+EXE_NAME='soapBubble-dvg'
 EXE_DIR='/home/soapy/simulationCases'
 ORIG_DIR=${PWD}
 

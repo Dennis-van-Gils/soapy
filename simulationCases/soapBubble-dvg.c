@@ -37,15 +37,28 @@ The simulation captures:
 #include "navier-stokes/conserving.h"
 #include "tension.h"
 
-#define USE_CONCENTRATION_INSTEAD_OF_TRACER
+/*
+TRACER_FIELD
+  0: NONE
+  1: CONCENTRATION (smoke in air)
+  2: TRACER
+*/
+#define TRACER_FIELD 0
 
-#ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
-  #include "henry.h"
-  scalar T[], * stracers = {T};
-#else
-  #include "tracer.h"
-  scalar ft[], * tracers = {ft};
+#if TRACER_FIELD == 1
+#include "henry.h"
+scalar T[], * stracers = {T};
+#elif TRACER_FIELD == 2
+#include "tracer.h"
+scalar ft[], * tracers = {ft};
 #endif
+
+/*
+SOAP_BUBBLE_FULL
+  0: HALF
+  1: FULL
+*/
+#define SOAP_BUBBLE_FULL 1
 
 /**
 ## Simulation Parameters
@@ -92,10 +105,15 @@ These control the error thresholds for grid adaptation:
 */
 u.t[left] = dirichlet(0.0);
 u.n[left] = dirichlet(0.0);
-f[left] = dirichlet(0.0);
-#ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+
+#if SOAP_BUBBLE_FULL
+f[left] = dirichlet(0.0);   // soapBubble-full
 #else
-  ft[left] = dirichlet(0.0);
+f[left] = neumann(0.0);     // soapBubble-half
+#endif
+
+#if TRACER_FIELD == 2
+ft[left] = dirichlet(0.0);
 #endif
 
 /**
@@ -147,7 +165,10 @@ int main(int argc, char const *argv[]) {
   MAXlevel = 9; // 11;
   tmax = 0.01;  // 1.0;
   Ldomain = 5.0;
+
+#if SOAP_BUBBLE_FULL
   X0 = -1.005;
+#endif
 
   Oh1 = 1e-3;
   k = 2.5e1;
@@ -179,12 +200,12 @@ int main(int argc, char const *argv[]) {
   mu1 = Oh1; mu2 = Mu21*Oh1;
   f.sigma = 1.0;  // Surface tension coefficient
 
-  #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
-    // for smoke concentration T
-    T.D1 = 1e-3/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in water, $Pe_\text{water} \to \infty$.
-    T.D2 = 1e0/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in air.
-    T.alpha = 1e-3; // proportion of smoke in water right at the interface (this should be close to 0.).
-  #endif
+#if TRACER_FIELD == 1
+  // for smoke concentration T
+  T.D1 = 1e-3/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in water, $Pe_\text{water} \to \infty$.
+  T.D2 = 1e0/Pe_gas; // inverse Peclet number based on diffusion coefficient of smoke in air.
+  T.alpha = 1e-3; // proportion of smoke in water right at the interface (this should be close to 0.).
+#endif
 
   run();
 }
@@ -232,15 +253,15 @@ event init(t = 0) {
     }
     fractions(phi, f);
 
-    #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
-      fraction(T, (sq((1.0 - h)*0.5) - R2circle(x, y)));
-    #else
-      fraction(ft, (sq((1.0 - h)*0.5) - R2circle(x, y)));
-    #endif
+#if TRACER_FIELD == 1
+    fraction(T, (sq((1.0 - h)*0.5) - R2circle(x, y)));
+#elif TRACER_FIELD == 2
+    fraction(ft, (sq((1.0 - h)*0.5) - R2circle(x, y)));
+#endif
 
     // Initialize pressure field based on region
     foreach() {
-      #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
+      #if TRACER_FIELD == 1
         T[] *= 1e1;
       #endif
       if (R2circle(x, y) < sq(1.0 - h)) {
@@ -277,10 +298,9 @@ scalar KAPPA[];
 event adapt(i++) {
   curvature(f, KAPPA);
   adapt_wavelet((scalar *){f, u.x, u.y, KAPPA
-                #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
-                #else
-                  , ft
-                #endif
+#if TRACER_FIELD == 2
+                , ft
+#endif
                 },
                 (double[]){fErr, VelErr, VelErr, KErr},
                 MAXlevel, MAXlevel - 4);
@@ -340,10 +360,15 @@ event logWriting(i++) {
   }
 }
 
-//*
 event movies (i += 1; t <= tmax) {
   scalar omega[];
+  scalar m[];
+
   vorticity(u, omega);
+
+  foreach()
+    m[] = f[] - 0.5;
+
   output_ppm(
     omega,
     file = "../postProcess/Video/vort.mp4",
@@ -351,21 +376,23 @@ event movies (i += 1; t <= tmax) {
     min = -1,
     max = 1,
     linear = false,
-    mask = {0}
+    mask = f
   );
+
+#if TRACER_FIELD > 0
   output_ppm(
-    #ifdef USE_CONCENTRATION_INSTEAD_OF_TRACER
-      T,
-      file = "../postProcess/Video/T.mp4",
-    #else
-      ft,
-      file = "../postProcess/Video/ft.mp4",
-    #endif
+#if TRACER_FIELD == 1
+    T,
+    file = "../postProcess/Video/T.mp4",
+#elif TRACER_FIELD == 2
+    ft,
+    file = "../postProcess/Video/ft.mp4",
+#endif
     box = {{0., 0.}, {2.5, 2.5}},
     min = 0,
     max = 1,
     linear = false,
-    mask = {0}
+    mask = f
   );
+#endif
 }
-//*/
