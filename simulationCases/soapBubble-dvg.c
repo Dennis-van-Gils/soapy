@@ -366,31 +366,52 @@ event movies (i += 1; t <= tmax) {
 
   vorticity(u, omega);
 
+  /*
+  // mask
   foreach()
     m[] = f[] - 0.5;
+  */
 
   output_ppm(
     omega,
     file = "../postProcess/Video/vort.mp4",
     box = {{0., 0.}, {2.5, 2.5}},
-    min = -1,
-    max = 1,
-    linear = false,
+    min = -10,
+    max = 10,
+    linear = true,
     mask = f
   );
+
+
+#if TRACER_FIELD == 1
+  /* Normalize T by maximum value */
+  scalar T_norm[];
+  double maxT = statsf(T).max;
+  foreach() {
+    T_norm[] = T[]/maxT;
+  }
+#elif TRACER_FIELD == 2
+  /* Normalize ft by maximum value */
+  scalar ft_norm[];
+  double max_ft = statsf(ft).max;
+  foreach() {
+    ft_norm[] = ft[]/max_ft;
+  }
+#endif
 
 #if TRACER_FIELD > 0
   output_ppm(
 #if TRACER_FIELD == 1
-    T,
+    T_norm,
     file = "../postProcess/Video/T.mp4",
 #elif TRACER_FIELD == 2
     ft,
     file = "../postProcess/Video/ft.mp4",
 #endif
     box = {{0., 0.}, {2.5, 2.5}},
-    min = 0,
-    max = 1,
+    min = 0.0,
+    max = 1.0,
+    map = jet,
     linear = false,
     mask = f
   );
